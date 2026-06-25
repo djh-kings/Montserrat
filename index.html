@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Practise Your Part</title>
+
+<script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/html-midi-player@1.5.0"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/html-midi-player@1.5.0/style.css">
+
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --card: #ffffff;
+    --ink: #1d1d1f;
+    --muted: #6e6e73;
+    --accent: #2a6df4;
+    --line: #e4e4e6;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 18px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 540px;
+    background: var(--card);
+    border-radius: 20px;
+    padding: 22px 20px 26px;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.06);
+  }
+
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 18px;
+    text-align: center;
+  }
+
+  /* Player + visualizer take full width */
+  midi-player {
+    width: 100%;
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  midi-visualizer {
+    width: 100%;
+    display: block;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 22px;
+  }
+
+  /* Make the built-in player controls big and tappable */
+  midi-player::part(control-panel) {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+  }
+  midi-player::part(play-button) {
+    width: 64px;
+    height: 64px;
+  }
+  midi-player::part(time) {
+    font-size: 1rem;
+  }
+
+  .control {
+    margin-top: 18px;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .control-label .hint {
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  .tempo-value {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 44px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    margin: 0;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--line);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--line);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    margin-top: -12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+
+  /* Big loop toggle */
+  .loop-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .loop-toggle[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .loop-state {
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Practise Your Part</h1>
+
+      <midi-player src="Montserrat.mid" sound-font></midi-player>
+      <midi-visualizer src="Montserrat.mid"></midi-visualizer>
+
+      <div class="control">
+        <div class="control-label">
+          <span>Tempo <span class="hint">— slow down to practise</span></span>
+          <span class="tempo-value" id="tempoValue">100%</span>
+        </div>
+        <input type="range" id="tempo" min="50" max="100" step="5" value="100"
+               aria-label="Playback tempo, 50 to 100 percent of original speed">
+      </div>
+
+      <div class="control">
+        <button type="button" class="loop-toggle" id="loopToggle" aria-pressed="false">
+          <span>Loop</span>
+          <span class="loop-state" id="loopState">Off</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const player = document.querySelector('midi-player');
+  const visualizer = document.querySelector('midi-visualizer');
+  const tempo = document.getElementById('tempo');
+  const tempoValue = document.getElementById('tempoValue');
+  const loopToggle = document.getElementById('loopToggle');
+  const loopState = document.getElementById('loopState');
+
+  // Link the player to the visualizer so notes light up while playing.
+  player.addVisualizer(visualizer);
+
+  // Tempo: html-midi-player exposes a 1.0 = original-speed playback rate.
+  function applyTempo() {
+    const pct = Number(tempo.value);
+    tempoValue.textContent = pct + '%';
+    player.playbackRate = pct / 100;
+  }
+  tempo.addEventListener('input', applyTempo);
+  applyTempo();
+
+  // Loop toggle.
+  let looping = false;
+  loopToggle.addEventListener('click', () => {
+    looping = !looping;
+    player.loop = looping;
+    loopToggle.setAttribute('aria-pressed', String(looping));
+    loopState.textContent = looping ? 'On' : 'Off';
+  });
+</script>
+</body>
+</html>
