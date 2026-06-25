@@ -175,6 +175,26 @@
   .loop-state {
     font-weight: 700;
   }
+
+  /* Big, tappable instrument dropdown */
+  select.instrument {
+    width: 100%;
+    min-height: 56px;
+    padding: 0 44px 0 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath fill='none' stroke='%236e6e73' stroke-width='2' d='M1 1l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -195,6 +215,22 @@
       </div>
 
       <div class="control">
+        <div class="control-label">
+          <span>Instrument <span class="hint">— how the part sounds</span></span>
+        </div>
+        <select class="instrument" id="instrument" aria-label="Instrument the part is played with">
+          <option value="0" selected>Piano</option>
+          <option value="4">Electric piano</option>
+          <option value="19">Church organ</option>
+          <option value="52">Choir &ldquo;aahs&rdquo;</option>
+          <option value="53">Voice &ldquo;oohs&rdquo;</option>
+          <option value="48">Strings</option>
+          <option value="73">Flute</option>
+          <option value="71">Clarinet</option>
+        </select>
+      </div>
+
+      <div class="control">
         <button type="button" class="loop-toggle" id="loopToggle" aria-pressed="false">
           <span>Loop</span>
           <span class="loop-state" id="loopState">Off</span>
@@ -210,6 +246,7 @@
   const tempoValue = document.getElementById('tempoValue');
   const loopToggle = document.getElementById('loopToggle');
   const loopState = document.getElementById('loopState');
+  const instrument = document.getElementById('instrument');
 
   // Link the player to the visualizer so notes light up while playing.
   player.addVisualizer(visualizer);
@@ -230,6 +267,34 @@
     player.loop = looping;
     loopToggle.setAttribute('aria-pressed', String(looping));
     loopState.textContent = looping ? 'On' : 'Off';
+  });
+
+  // Instrument: re-voice the part by overriding the General MIDI program.
+  // We load the MIDI into a note sequence once, then on each change clone it,
+  // rewrite every note's program, and hand it back to the player/visualizer.
+  const magenta = window.core || window.mm;   // global name varies by build
+  let baseSeq = null;
+
+  async function ensureSequence() {
+    if (!baseSeq && magenta) {
+      baseSeq = await magenta.urlToNoteSequence('Montserrat.mid');
+    }
+    return baseSeq;
+  }
+
+  instrument.addEventListener('change', async () => {
+    const seq = await ensureSequence();
+    if (!seq) return;   // library unavailable; leave default piano playing
+
+    const program = Number(instrument.value);
+    const revoiced = JSON.parse(JSON.stringify(seq));
+    revoiced.notes.forEach(n => { n.program = program; n.isDrum = false; });
+
+    player.stop();
+    player.noteSequence = revoiced;     // switching to a sequence overrides src
+    visualizer.noteSequence = revoiced;
+    applyTempo();                       // re-apply, reload can reset the rate
+    player.loop = looping;
   });
 </script>
 </body>
