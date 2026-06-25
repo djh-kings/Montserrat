@@ -176,6 +176,28 @@
     font-weight: 700;
   }
 
+  /* Loading indicator while soundfont samples download */
+  .status {
+    margin: -8px 0 16px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .status[hidden] { display: none; }
+  .status::before {
+    content: "";
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin-right: 7px;
+    vertical-align: -1px;
+    border: 2px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* Big, tappable instrument dropdown */
   select.instrument {
     width: 100%;
@@ -203,6 +225,7 @@
       <h1>Practise Your Part</h1>
 
       <midi-player src="Montserrat.mid" sound-font></midi-player>
+      <p class="status" id="status" role="status">Loading sounds…</p>
       <midi-visualizer src="Montserrat.mid"></midi-visualizer>
 
       <div class="control">
@@ -247,9 +270,28 @@
   const loopToggle = document.getElementById('loopToggle');
   const loopState = document.getElementById('loopState');
   const instrument = document.getElementById('instrument');
+  const status = document.getElementById('status');
 
   // Link the player to the visualizer so notes light up while playing.
   player.addVisualizer(visualizer);
+
+  // Loading indicator. html-midi-player downloads and decodes the soundfont
+  // samples before it fires 'load' (the play button is disabled until then),
+  // so show a spinner until the sounds are ready instead of looking frozen.
+  function showLoading() { status.hidden = false; }
+  function hideLoading() { status.hidden = true; }
+  player.addEventListener('load', hideLoading);
+  player.addEventListener('start', hideLoading);
+  // Safety net so the spinner can never get stuck if 'load' is missed.
+  setTimeout(hideLoading, 12000);
+
+  // Start the audio engine on the first touch anywhere so that the very first
+  // tap on Play isn't spent waking up a suspended AudioContext.
+  function warmAudio() {
+    if (window.Tone && window.Tone.start) { window.Tone.start(); }
+    document.removeEventListener('pointerdown', warmAudio);
+  }
+  document.addEventListener('pointerdown', warmAudio, { once: true });
 
   // Tempo: html-midi-player exposes a 1.0 = original-speed playback rate.
   function applyTempo() {
@@ -291,6 +333,7 @@
     revoiced.notes.forEach(n => { n.program = program; n.isDrum = false; });
 
     player.stop();
+    showLoading();                      // new program = fresh samples to fetch
     player.noteSequence = revoiced;     // switching to a sequence overrides src
     visualizer.noteSequence = revoiced;
     applyTempo();                       // re-apply, reload can reset the rate
